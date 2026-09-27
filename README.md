@@ -1,80 +1,473 @@
-# InvoiceFlow — Setup & Phase 2 Status
+# Invoice Data Extraction and Validation Pipeline
 
-This folder contains:
+An intelligent invoice processing system that automatically extracts structured information from PDF/image invoices and validates the extracted data before storing it in the database.
 
+The system is designed to reduce manual invoice processing, identify calculation and data-entry errors, and provide a reliable workflow for invoice review and approval.
+
+---
+
+## 🚀 Features
+
+* 📄 Upload PDF and image invoices
+* 🤖 Automatic invoice data extraction using OCR / Google Document AI
+* 🏢 Extract vendor information
+* 🔢 Extract invoice number and purchase order number
+* 📅 Extract invoice date
+* 📦 Extract item details
+* 🔢 Extract quantity and unit price
+* 💰 Extract subtotal, tax/GST and grand total
+* ✅ Automatic invoice validation
+* 🧮 Line-item calculation validation
+* 🧾 Subtotal and grand-total verification
+* 🧮 GST/tax validation
+* 🔍 Duplicate invoice detection
+* 📅 Invoice date validation
+* ⚠️ Missing-field detection
+* 🚫 Invalid/non-invoice document detection
+* 📊 Dashboard for invoice monitoring
+* 🔎 Invoice search and filtering
+* 🔄 Invoice refresh functionality
+* 🗄️ MySQL database storage
+* 👤 Human review for invalid or low-confidence invoices
+* 📑 Invoice report generation
+* 🔐 Environment variables for sensitive configuration
+
+---
+
+## 🏗️ System Workflow
+
+```text
+                Invoice Upload
+                      │
+                      ▼
+              PDF / Image File
+                      │
+                      ▼
+              OCR / Document AI
+                      │
+                      ▼
+             Data Extraction
+                      │
+        ┌─────────────┴─────────────┐
+        │                           │
+        ▼                           ▼
+   Invoice Fields              Line Items
+        │                           │
+        └─────────────┬─────────────┘
+                      ▼
+               Data Validation
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+        ▼             ▼             ▼
+   Required       Calculation    Duplicate
+    Fields          Check         Check
+        │             │             │
+        └─────────────┼─────────────┘
+                      ▼
+                Validation Result
+                 /           \
+                /             \
+               ▼               ▼
+             Valid           Invalid
+               │               │
+               ▼               ▼
+            Database       Human Review
+               │
+               ▼
+          Dashboard / Report
 ```
-frontend invoice data extractioon/
-  invoiceflow/     — React + Vite + Tailwind dashboard (existing, now wired to the real API)
-  backend/         — Node.js + Express backend (new, Phase 2)
-  backend-and-architecture.md  — original planning notes (superseded by this README + the spec you gave)
+
+---
+
+## 🧠 Validation Checks
+
+The system performs multiple validation checks after extracting invoice information.
+
+### Required Field Validation
+
+Checks whether important invoice fields are available:
+
+* Vendor Name
+* Invoice Number
+* Invoice Date
+* Invoice Items
+* Quantity
+* Unit Price
+* Tax/GST
+* Total Amount
+
+### Calculation Validation
+
+The system verifies:
+
+```text
+Quantity × Unit Price = Line Item Amount
 ```
 
-## What's real right now (Phase 2)
+Then:
 
-- Uploading a file from the dashboard sends it to the Express backend over HTTP.
-- The backend validates file type (`pdf`, `jpg`, `jpeg`, `png`) and size (20MB default), stores it on local disk under a random UUID filename (never the original filename — prevents path traversal), and computes a SHA-256 hash.
-- **Exact-file duplicate detection is real**: if the same bytes are uploaded twice, the second one is flagged `DUPLICATE_FILE` with a reference to the original.
-- `GET /api/invoices`, `GET /api/invoices/:id`, and `GET /api/dashboard/stats` return real data from what's been uploaded — currently stored in a JSON file (`backend/src/data/db.json`), which stands in for MySQL until Phase 3.
+```text
+Sum of Line Items = Subtotal
+```
 
-## What's NOT real yet (by design — see roadmap below)
+And finally:
 
-- No OCR / Document AI extraction — uploaded files are stored but not read.
-- No validation engine (calculation checks, GST checks, etc.) — not implemented yet, so nothing is labeled `VALID`/`REVIEW`/`INVALID`.
-- No MySQL — the JSON file store is a placeholder with the same read/write interface a real DB layer will have, so swapping it later won't touch route or controller code.
-- No human review workflow — the dashboard's other pages (All Invoices, Errors, Duplicates, Analytics) still show the original 24 seeded demo invoices from `INVOICES` in `InvoiceDashboard.jsx`. Only the **Upload** page is wired to the real backend so far.
+```text
+Subtotal + Tax/GST = Grand Total
+```
 
-## Running it locally
+If the calculated amount differs from the invoice amount, the invoice is marked as invalid and sent for review.
 
-### 1. Backend
+### Duplicate Invoice Detection
+
+The system checks whether the same invoice has already been uploaded or stored.
+
+### Document Validation
+
+Documents that do not contain recognizable invoice information are rejected instead of generating random invoice calculations.
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+
+* React.js
+* Vite
+* JavaScript
+* Lucide React
+* Recharts
+* HTML5
+* CSS3
+
+### Backend
+
+* Node.js
+* Express.js
+* REST API
+* Multer
+* CORS
+* UUID
+* dotenv
+
+### AI / Document Processing
+
+* Google Cloud Document AI
+* Invoice Parser
+* OCR-based document processing
+
+### Database
+
+* MySQL
+
+### Development Tools
+
+* Git
+* GitHub
+* Visual Studio Code
+* PowerShell
+* Postman / cURL
+
+---
+
+## 📂 Project Structure
+
+```text
+invoice-data-extraction-validation/
+│
+├── backend/
+│   ├── src/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   └── server.js
+│   │
+│   ├── uploads/
+│   ├── credentials/
+│   ├── package.json
+│   └── .env
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── App.jsx
+│   │   └── InvoiceDashboard.jsx
+│   │
+│   ├── package.json
+│   └── vite.config.js
+│
+├── .gitignore
+└── README.md
+```
+
+> **Note:** `.env`, service-account credentials, and other sensitive files should never be committed to GitHub.
+
+---
+
+## ⚙️ Installation
+
+### 1. Clone the Repository
 
 ```bash
-cd "frontend invoice data extractioon/backend"
+git clone https://github.com/Aditya1710S/invoice-data-extraction-validation.git
+```
+
+```bash
+cd invoice-data-extraction-validation
+```
+
+---
+
+## 🔧 Backend Setup
+
+Go to the backend folder:
+
+```bash
+cd backend
+```
+
+Install dependencies:
+
+```bash
 npm install
-cp .env.example .env
+```
+
+Create a `.env` file:
+
+```env
+PORT=4000
+NODE_ENV=development
+
+CORS_ORIGIN=http://localhost:5173
+
+DB_NAME=invoiceflow
+DB_USER=invoiceflow_app
+DB_PASSWORD=YOUR_DATABASE_PASSWORD
+DB_HOST=localhost
+
+GOOGLE_CLOUD_PROJECT_ID=YOUR_PROJECT_ID
+DOCUMENT_AI_PROCESSOR_ID=YOUR_PROCESSOR_ID
+DOCUMENT_AI_LOCATION=us
+
+GOOGLE_APPLICATION_CREDENTIALS=./credentials/invoiceflow-service-account.json
+```
+
+Start the backend:
+
+```bash
 npm run dev
 ```
 
-Starts on `http://localhost:4000`. Check it's alive:
+Backend API:
 
-```bash
-curl http://localhost:4000/api/health
+```text
+http://localhost:4000
 ```
 
-You'll see a console warning that Document AI isn't configured — expected until Phase 3.
+Health check:
 
-### 2. Frontend
+```text
+http://localhost:4000/api/health
+```
+
+---
+
+## 💻 Frontend Setup
+
+Open another terminal and go to the frontend folder:
 
 ```bash
-cd "frontend invoice data extractioon/invoiceflow"
+cd frontend
+```
+
+Install dependencies:
+
+```bash
 npm install
+```
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-Starts on `http://localhost:5173` (Vite default). Go to the **Upload Invoice** page and drop a real PDF or image — it will actually upload, hash, and store the file, and show you the real backend response.
+The frontend will normally run at:
 
-If your backend runs somewhere other than `http://localhost:4000`, set `VITE_API_BASE_URL` in a `.env` file inside `invoiceflow/` (e.g. `VITE_API_BASE_URL=http://localhost:4000/api`).
+```text
+http://localhost:5173
+```
 
-### 3. Try duplicate detection
+---
 
-Upload the same file twice (or two files with identical content) — the second one will come back marked as a duplicate with a reference to the first.
+## 🗄️ Database
 
-## Roadmap — what happens in each remaining phase
+The project uses MySQL for storing invoice information.
 
-| Phase | Scope |
-|---|---|
-| **3** | Google Cloud Document AI integration — real OCR extraction into the fields your spec defines (vendor, GSTIN, invoice #, line items, etc.). Requires a GCP project, a Document AI Invoice Parser processor, and a service account key — see below. |
-| **4** | Validation engine — line-item math, GST/tax math (CGST+SGST or IGST, not hardcoded to 18%), grand total, date checks, vendor master-data checks, business-level duplicate detection (invoice number + vendor, not just file hash). |
-| **5** | MySQL — replace `jsonStore.js` with a real `mysql2` connection pool and the schema (`users`, `vendors`, `invoices`, `invoice_items`, `validation_results`, `validation_errors`, `review_history`, `processing_logs`). |
-| **6** | Human Review page — PDF preview + editable extracted fields + Save Correction / Re-validate / Approve / Reject, wired to the dashboard's existing `ReviewModal` UI. |
-| **7** | Wire the rest of the dashboard (All Invoices, Errors, Duplicates, Analytics, dashboard KPIs) to the real API instead of the seeded demo data, and retire `INVOICES`/`buildInvoice()` from `InvoiceDashboard.jsx`. |
-| **8** (optional, later) | BullMQ/Redis queue for async processing instead of the current sequential bulk-upload loop. |
+Create the database:
 
-### Setting up Document AI for Phase 3 (when you're ready)
+```sql
+CREATE DATABASE invoiceflow;
+```
 
-1. Create a GCP project (or use an existing one) and enable the **Document AI API**.
-2. Create an **Invoice Parser** processor in Document AI, note its Processor ID and region.
-3. Create a service account with the `Document AI API User` role, download its JSON key.
-4. In `backend/.env`, set `GOOGLE_APPLICATION_CREDENTIALS` (path to that key file), `GCP_PROJECT_ID`, `GCP_LOCATION`, and `DOCUMENT_AI_PROCESSOR_ID`.
-5. Never commit the key file or put it in the frontend — `backend/.gitignore` already excludes `gcp-service-account.json`.
+The backend initializes the required tables when configured correctly.
 
-Let me know when you want to move on to Phase 3 and I'll build the Document AI integration against these same upload records.
+Make sure MySQL is running before starting the backend.
+
+---
+
+## ☁️ Google Document AI Configuration
+
+The project uses Google Cloud Document AI for invoice processing.
+
+Required configuration:
+
+```text
+Google Cloud Project
+        │
+        ▼
+Document AI API
+        │
+        ▼
+Invoice Parser
+        │
+        ▼
+Processor ID
+        │
+        ▼
+Backend
+        │
+        ▼
+Invoice Extraction
+```
+
+The Google Cloud service-account JSON file should be stored locally and must **not** be uploaded to GitHub.
+
+---
+
+## 🔐 Security
+
+Sensitive configuration is intentionally excluded from the repository.
+
+The following should not be committed:
+
+```text
+.env
+credentials/
+service-account JSON files
+node_modules/
+uploads/
+```
+
+Use `.env.example` to document required environment variables without exposing passwords or credentials.
+
+---
+
+## 📊 Example Invoice Processing
+
+### Valid Invoice
+
+```text
+Quantity:       10
+Unit Price:     ₹100
+Subtotal:       ₹1000
+GST:            ₹180
+Grand Total:    ₹1180
+```
+
+The calculation is consistent, so the invoice can proceed to the next stage.
+
+### Invalid Invoice
+
+```text
+Quantity:       10
+Unit Price:     ₹100
+Expected:       ₹1000
+Invoice Amount: ₹1100
+```
+
+The system detects the discrepancy and marks the invoice for validation/review.
+
+---
+
+## 🔍 API Endpoints
+
+| Method | Endpoint                 | Description                |
+| ------ | ------------------------ | -------------------------- |
+| GET    | `/api/health`            | Check backend status       |
+| POST   | `/api/invoices/upload`   | Upload and process invoice |
+| GET    | `/api/invoices`          | Get invoices               |
+| GET    | `/api/invoices/:id`      | Get invoice details        |
+| PUT    | `/api/invoices/:id`      | Update invoice             |
+| DELETE | `/api/invoices/:id`      | Delete invoice             |
+| GET    | `/api/invoices/:id/file` | Access invoice file        |
+
+---
+
+## 🎯 Objectives
+
+1. Automate invoice data extraction.
+2. Reduce manual data entry.
+3. Validate invoice calculations automatically.
+4. Detect duplicate invoices.
+5. Identify missing or invalid invoice information.
+6. Store structured invoice data in a database.
+7. Provide a dashboard for invoice monitoring.
+8. Reduce the need for manual invoice verification.
+9. Route exceptions to human review.
+
+---
+
+## 🌍 Scope
+
+The system can be used for:
+
+* Accounts Payable departments
+* Small and medium businesses
+* Enterprise invoice processing
+* Vendor invoice management
+* Financial document processing
+* Automated accounting workflows
+
+Future versions can be extended with:
+
+* Advanced fraud detection
+* Vendor-specific validation rules
+* Email invoice ingestion
+* Cloud deployment
+* ERP integration
+* Multi-language invoice processing
+* Machine-learning based anomaly detection
+* Automated approval workflows
+
+---
+
+## 📈 Benefits
+
+* Faster invoice processing
+* Reduced manual effort
+* Improved data accuracy
+* Automatic calculation verification
+* Duplicate invoice detection
+* Centralized invoice records
+* Better visibility through dashboard
+* Human review only for exceptions
+
+---
+
+## 👨‍💻 Project
+
+**Project Title:**
+Invoice Data Extraction and Validation Pipeline
+
+**Domain:**
+Artificial Intelligence | Data Extraction | Document Processing | Full Stack Development
+
+**Technologies:**
+React.js | Node.js | Express.js | Google Cloud Document AI | MySQL
+
+**Repository:**
+https://github.com/Aditya1710S/invoice-data-extraction-validation
+
