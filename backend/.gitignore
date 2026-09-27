@@ -1,0 +1,14 @@
+node_modules/
+
+.env
+
+src/uploads/*
+!src/uploads/.gitkeep
+
+src/data/db.json
+
+*.log
+
+# Google Cloud service account credentials
+gcp-service-account.json
+credentials/

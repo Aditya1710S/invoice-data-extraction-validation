@@ -1,0 +1,24 @@
+{
+  "name": "invoiceflow-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "InvoiceFlow backend — Phase 2: upload API, local file storage, exact-duplicate detection.",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@google-cloud/documentai": "^10.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.1",
+    "mysql2": "^3.24.4",
+    "pdf-parse": "^2.4.5",
+    "pdfkit": "^0.20.2",
+    "uuid": "^9.0.1"
+  }
+}
